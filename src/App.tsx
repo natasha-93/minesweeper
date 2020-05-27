@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { cloneDeep } from "lodash";
 import { ICell } from "./models/Cell";
 import Cell from "./Cell";
 
@@ -43,6 +44,47 @@ const defaultBoard: Board = [
   ],
 ];
 
+// Mutates board with all adjacent empties marked as revealed
+const revealNeighborsRecursive = (
+  board: Board,
+  rowIndex: number,
+  colIndex: number
+): Board => {
+  if (rowIndex < 0 || rowIndex > board.length - 1) return board;
+  if (colIndex < 0 || colIndex > board[0].length - 1) return board;
+
+  const cell = board[rowIndex][colIndex];
+
+  if (cell.status !== "UNREVEALED") return board;
+  if (cell.value !== "0") return board;
+
+  board[rowIndex][colIndex].status = "REVEALED";
+
+  revealNeighborsRecursive(board, rowIndex - 1, colIndex);
+  revealNeighborsRecursive(board, rowIndex, colIndex + 1);
+  revealNeighborsRecursive(board, rowIndex + 1, colIndex);
+  revealNeighborsRecursive(board, rowIndex, colIndex - 1);
+
+  return board;
+};
+
+const revealNeighbors = (
+  board: Board,
+  rowIndex: number,
+  colIndex: number
+): Board => {
+  const newBoard = revealNeighborsRecursive(
+    cloneDeep(board),
+    rowIndex,
+    colIndex
+  );
+
+  // ensure the first click reveals the cell
+  newBoard[rowIndex][colIndex].status = "REVEALED";
+
+  return newBoard;
+};
+
 const countCells = (board: Board, shouldCount: (cell: ICell) => boolean) => {
   const count = board.reduce((boardCount, row) => {
     const rowCount = row.reduce(
@@ -73,6 +115,21 @@ function App() {
     }
   }, [gameStatus]);
 
+  useEffect(() => {
+    const revealedBombCount = countCells(
+      board,
+      (cell) => cell.value === "B" && cell.status === "REVEALED"
+    );
+    const boardSize = board.length * board[0].length;
+
+    // Check if we've won/lost
+    if (revealedBombCount > 0) {
+      setGameStatus("LOST");
+    } else if (boardSize - revealedCount === bombCount) {
+      setGameStatus("WON");
+    }
+  }, [revealedCount]);
+
   const updateCell = (
     rowIndex: number,
     colIndex: number,
@@ -92,21 +149,7 @@ function App() {
   };
 
   const reveal = (rowIndex: number, colIndex: number) => {
-    const newBoard = updateCell(rowIndex, colIndex, (cell) => ({
-      ...cell,
-      status: "REVEALED",
-    }));
-
-    // Check if we've won/lost
-    if (newBoard[rowIndex][colIndex].value === "B") {
-      setGameStatus("LOST");
-    } else {
-      const boardSize = board.length * board[0].length;
-
-      if (boardSize - revealedCount === bombCount) {
-        setGameStatus("WON");
-      }
-    }
+    const newBoard = revealNeighbors(board, rowIndex, colIndex);
 
     setBoard(newBoard);
   };
