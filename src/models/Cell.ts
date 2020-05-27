@@ -1,6 +1,17 @@
 export type CellStatus = "REVEALED" | "FLAGGED" | "UNREVEALED";
+export type CellValue =
+  | "0"
+  | "1"
+  | "2"
+  | "3"
+  | "4"
+  | "5"
+  | "6"
+  | "7"
+  | "8"
+  | "B";
 
 export interface ICell {
-  value: "0" | "1" | "2" | "3" | "4" | "5" | "6" | "7" | "8" | "B";
+  value: CellValue;
   status: CellStatus;
 }
