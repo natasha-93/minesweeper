@@ -1,6 +1,24 @@
 import { cloneDeep, range, shuffle, chunk } from "lodash";
 import { BoardType } from "../models/Board";
-import { ICell, CellValue } from "../models/Cell";
+import { ICell, CellValue, CellCoordinates } from "../models/Cell";
+
+export const findCellCoords = (
+  board: BoardType,
+  isMatch: (cell: ICell) => boolean
+): CellCoordinates | null => {
+  for (let row = 0; row < board.length; row++) {
+    for (let col = 0; col < board[row].length; col++) {
+      if (isMatch(board[row][col])) {
+        return {
+          row,
+          col,
+        };
+      }
+    }
+  }
+
+  return null;
+};
 
 export const updateCell = (
   board: BoardType,
@@ -21,11 +39,11 @@ export const updateCell = (
   return newBoard;
 };
 
-export const updateNeighbors = (
+export const forEachNeighbor = (
   board: BoardType,
   rowIndex: number,
   colIndex: number,
-  update: (row: number, col: number) => void
+  callback: (coords: CellCoordinates) => void
 ): void => {
   const deltas = [
     [0, -1],
@@ -39,11 +57,33 @@ export const updateNeighbors = (
   ];
 
   deltas.forEach(([dX, dY]) => {
-    const x = colIndex + dX;
-    const y = rowIndex + dY;
+    const row = rowIndex + dY;
+    const col = colIndex + dX;
 
-    if (Array.isArray(board[y]) && board[y][x] != null) {
-      update(x, y);
+    if (Array.isArray(board[row]) && board[row][col] != null) {
+      callback({ row, col });
+    }
+  });
+};
+
+export const isNumCell = (cell: ICell): boolean =>
+  ["0", "1", "2", "3", "4", "5", "6", "7", "8"].includes(cell.value);
+
+export const updateNeighborCounts = (
+  board: BoardType,
+  rowIndex: number,
+  colIndex: number,
+  change: "increase" | "decrease"
+) => {
+  forEachNeighbor(board, rowIndex, colIndex, ({ row, col }) => {
+    if (!isNumCell(board[row][col])) return;
+
+    const n = Number(board[row][col].value);
+
+    if (change === "increase") {
+      board[row][col].value = String(n + 1) as CellValue;
+    } else {
+      board[row][col].value = String(n - 1) as CellValue;
     }
   });
 };
@@ -59,14 +99,12 @@ export const createBoard = (size: number, bombCount: number): BoardType => {
   for (let i = 0; i < size; i++) {
     for (let j = 0; j < size; j++) {
       if (board[i][j].value === "B") {
-        updateNeighbors(board, i, j, (column, row) => {
-          const cell = board[row][column];
+        forEachNeighbor(board, i, j, ({ row, col }) => {
+          const cell = board[row][col];
 
           if (cell.value === "B") return;
 
-          board[row][column].value = String(
-            Number(cell.value) + 1
-          ) as CellValue;
+          board[row][col].value = String(Number(cell.value) + 1) as CellValue;
         });
       }
     }
@@ -132,4 +170,34 @@ export const countCells = (
   }, 0);
 
   return count;
+};
+
+export const countNeighbors = (
+  board: BoardType,
+  rowIndex: number,
+  colIndex: number,
+  shouldCount: (cell: ICell) => boolean
+) => {
+  let total = 0;
+
+  forEachNeighbor(board, rowIndex, colIndex, ({ row, col }) => {
+    if (shouldCount(board[row][col])) {
+      total++;
+    }
+  });
+
+  return total;
+};
+
+export const countAdjacentBombs = (
+  board: BoardType,
+  rowIndex: number,
+  colIndex: number
+): number => {
+  return countNeighbors(
+    board,
+    rowIndex,
+    colIndex,
+    (cell) => cell.value === "B"
+  );
 };

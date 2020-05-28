@@ -1,3 +1,4 @@
+export type CellCoordinates = { row: number; col: number };
 export type CellStatus = "REVEALED" | "FLAGGED" | "UNREVEALED";
 export type CellValue =
   | "0"

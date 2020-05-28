@@ -1,12 +1,17 @@
-import { useReducer, useEffect } from "react";
+import { useReducer } from "react";
+import { cloneDeep } from "lodash";
 import {
   createBoard,
   countCells,
   revealNeighbors,
   updateCell,
+  findCellCoords,
+  updateNeighborCounts,
+  countAdjacentBombs,
 } from "../utils/board";
 import { GameStatus } from "../models/GameStatus";
 import { BoardType } from "../models/Board";
+import { CellCoordinates, CellValue } from "../models/Cell";
 
 type GameState = {
   board: BoardType;
@@ -15,8 +20,6 @@ type GameState = {
   gameStatus: GameStatus;
   preRevealing: boolean;
 };
-
-type CellCoordinates = { row: number; col: number };
 
 type GameAction =
   | { type: "REVEAL"; payload: CellCoordinates }
@@ -66,16 +69,58 @@ const appReducer = (state: GameState, action: GameAction): GameState => {
     case "REVEAL": {
       const { row, col } = action.payload;
 
-      const board = revealNeighbors(state.board, row, col);
+      let newBoard = cloneDeep(state.board);
+
+      const prevRevealedCount = countCells(
+        newBoard,
+        (cell) => cell.status === "REVEALED"
+      );
+
+      // Check if the first click would have revealed a bomb
+      if (prevRevealedCount === 0 && newBoard[row][col].value === "B") {
+        const firstNonBombCoords = findCellCoords(
+          newBoard,
+          (cell) => cell.value !== "B"
+        );
+
+        // Should never be null unless the board is nothing but bombs...
+        if (firstNonBombCoords != null) {
+          const bombCell = cloneDeep(newBoard[row][col]);
+          const nonBombCell = cloneDeep(
+            newBoard[firstNonBombCoords.row][firstNonBombCoords.col]
+          );
+
+          // Now we swap them...
+          newBoard[row][col] = nonBombCell;
+          newBoard[firstNonBombCoords.row][firstNonBombCoords.col] = bombCell;
+
+          // Update their neighbor counts...
+          updateNeighborCounts(newBoard, row, col, "decrease");
+          updateNeighborCounts(
+            newBoard,
+            firstNonBombCoords.row,
+            firstNonBombCoords.col,
+            "increase"
+          );
+
+          // And update the clicked cell's count
+          newBoard[row][col].value = String(
+            countAdjacentBombs(newBoard, row, col)
+          ) as CellValue;
+        }
+      }
+
+      newBoard = revealNeighbors(newBoard, row, col);
 
       const revealedBombCount = countCells(
-        board,
+        newBoard,
         (cell) => cell.value === "B" && cell.status === "REVEALED"
       );
       const revealedCount = countCells(
-        board,
+        newBoard,
         (cell) => cell.status === "REVEALED"
       );
+
       const boardSize = state.size * state.size;
 
       let gameStatus = state.gameStatus;
@@ -90,7 +135,7 @@ const appReducer = (state: GameState, action: GameAction): GameState => {
       return {
         ...state,
         gameStatus,
-        board,
+        board: newBoard,
         preRevealing: false,
       };
     }
