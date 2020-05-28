@@ -1,0 +1,31 @@
+.app {
+  margin: auto;
+  text-align: center;
+}
+
+.gameSliders {
+  display: grid;
+  grid-template-columns: 100%;
+  grid-template-rows: 50% 50%;
+  justify-items: center;
+}
+
+.sliderContainer {
+  max-width: 10rem;
+}
+
+.slider {
+  width: 80%;
+}
+
+.gameInfo {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.resetButton {
+  min-height: 2rem;
+  min-width: 2rem;
+}

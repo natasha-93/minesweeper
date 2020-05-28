@@ -1,0 +1,10 @@
+.cell {
+  min-width: 2rem;
+  min-height: 2rem;
+  vertical-align: top;
+}
+
+.cell:disabled {
+  opacity: 1;
+  color: black;
+}

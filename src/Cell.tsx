@@ -2,6 +2,7 @@ import React from "react";
 import { ICell } from "./models/Cell";
 import { GameStatus } from "./models/GameStatus";
 import CellIcon from "./CellIcon";
+import styles from "./Cell.module.css";
 
 export type CellProps = {
   cell: ICell;
@@ -10,6 +11,7 @@ export type CellProps = {
   gameStatus: GameStatus;
   onReveal: (rowIndex: number, colIndex: number, cell: ICell) => void;
   onToggleFlag: (rowIndex: number, colIndex: number, cell: ICell) => void;
+  onPreReveal: () => void;
 };
 
 const Cell: React.FC<CellProps> = ({
@@ -19,11 +21,12 @@ const Cell: React.FC<CellProps> = ({
   gameStatus,
   onReveal,
   onToggleFlag,
+  onPreReveal,
 }) => {
   return (
     <button
+      className={styles.cell}
       disabled={cell.status === "REVEALED" || gameStatus !== "ACTIVE"}
-      style={{ minWidth: "2rem", minHeight: "2rem", verticalAlign: "top" }}
       onContextMenu={(e) => {
         e.preventDefault();
 
@@ -35,6 +38,9 @@ const Cell: React.FC<CellProps> = ({
         if (cell.status === "UNREVEALED") {
           onReveal(rowIndex, colIndex, cell);
         }
+      }}
+      onMouseDown={(e) => {
+        onPreReveal();
       }}
     >
       <CellIcon

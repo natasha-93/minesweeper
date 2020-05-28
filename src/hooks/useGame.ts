@@ -13,6 +13,7 @@ type GameState = {
   size: number;
   bombCount: number;
   gameStatus: GameStatus;
+  preRevealing: boolean;
 };
 
 type CellCoordinates = { row: number; col: number };
@@ -20,7 +21,8 @@ type CellCoordinates = { row: number; col: number };
 type GameAction =
   | { type: "REVEAL"; payload: CellCoordinates }
   | { type: "TOGGLE_FLAG"; payload: CellCoordinates }
-  | { type: "RESET"; payload?: { size?: number; bombCount?: number } };
+  | { type: "RESET"; payload?: { size?: number; bombCount?: number } }
+  | { type: "PRE_REVEAL" };
 
 type HookOptions = {
   defaultSize?: number;
@@ -38,6 +40,7 @@ const appReducer = (state: GameState, action: GameAction): GameState => {
         size,
         bombCount,
         gameStatus: "ACTIVE",
+        preRevealing: false,
       };
     }
     case "TOGGLE_FLAG": {
@@ -53,6 +56,13 @@ const appReducer = (state: GameState, action: GameAction): GameState => {
         board,
       };
     }
+    case "PRE_REVEAL": {
+      return {
+        ...state,
+        preRevealing: true,
+      };
+    }
+
     case "REVEAL": {
       const { row, col } = action.payload;
 
@@ -81,6 +91,7 @@ const appReducer = (state: GameState, action: GameAction): GameState => {
         ...state,
         gameStatus,
         board,
+        preRevealing: false,
       };
     }
     default: {
@@ -98,33 +109,35 @@ const useGame = (
     bombCount: number;
     gameStatus: GameStatus;
     flaggedCount: number;
+    preRevealing: boolean;
   },
   React.Dispatch<GameAction>
 ] => {
   const defaultSize = options?.defaultSize ?? 10;
   const defaultBombCount = options?.defaultBombCount ?? 10;
 
-  const [{ board, size, bombCount, gameStatus }, dispatch] = useReducer(
-    appReducer,
-    {
-      gameStatus: "ACTIVE",
-      size: defaultSize,
-      bombCount: defaultBombCount,
-      board: createBoard(defaultSize, defaultBombCount),
-    }
-  );
+  const [
+    { board, size, bombCount, gameStatus, preRevealing },
+    dispatch,
+  ] = useReducer(appReducer, {
+    gameStatus: "ACTIVE",
+    size: defaultSize,
+    bombCount: defaultBombCount,
+    board: createBoard(defaultSize, defaultBombCount),
+    preRevealing: false,
+  });
 
   const flaggedCount = countCells(board, (cell) => cell.status === "FLAGGED");
 
-  useEffect(() => {
-    if (gameStatus === "ACTIVE") return;
+  // useEffect(() => {
+  //   if (gameStatus === "ACTIVE") return;
 
-    if (gameStatus === "WON") {
-      alert("You won!");
-    } else if (gameStatus === "LOST") {
-      alert("You lost!");
-    }
-  }, [gameStatus]);
+  //   if (gameStatus === "WON") {
+  //     alert("You won!");
+  //   } else if (gameStatus === "LOST") {
+  //     alert("You lost!");
+  //   }
+  // }, [gameStatus]);
 
   return [
     {
@@ -133,6 +146,7 @@ const useGame = (
       size,
       bombCount,
       gameStatus,
+      preRevealing,
     },
     dispatch,
   ];

@@ -8,6 +8,7 @@ export interface BoardProps {
   gameStatus: GameStatus;
   onReveal: (row: number, col: number) => void;
   onToggleFlag: (row: number, col: number) => void;
+  onPreReveal: () => void;
 }
 
 const Board: React.SFC<BoardProps> = ({
@@ -15,6 +16,7 @@ const Board: React.SFC<BoardProps> = ({
   gameStatus,
   onReveal,
   onToggleFlag,
+  onPreReveal,
 }) => {
   return (
     <div>
@@ -31,6 +33,7 @@ const Board: React.SFC<BoardProps> = ({
                   onReveal={onReveal}
                   onToggleFlag={onToggleFlag}
                   gameStatus={gameStatus}
+                  onPreReveal={onPreReveal}
                 />
               );
             })}
